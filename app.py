@@ -169,7 +169,7 @@ def claim_tokens():
         print(f"ERRO no resgate: {e}")
         
         # Retorna uma mensagem de erro genérica e amigável para o usuário final
-        return jsonify({"error": "ERRO! Não foi possível processar a solicitação no momento. Tente novamente mais tarde."}), 500
+        return jsonify({"error": "Não foi possível processar a solicitação no momento. Tente novamente mais tarde."}), 500
 
 # --- 5. INICIAR O SERVIDOR ---
 if __name__ == '__main__':
