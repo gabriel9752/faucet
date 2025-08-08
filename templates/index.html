@@ -17,7 +17,7 @@
             --text-secondary: #a0aec0;
             --success-color: #28a745;
             --error-color: #dc3545;
-            --border-thickness: 3px;
+            --border-thickness: 3px; /* Controle a espessura da borda aqui */
         }
 
         body {
@@ -29,67 +29,41 @@
             background-color: var(--background-dark);
             color: var(--text-primary);
             margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* --- LÓGICA CORRIGIDA DA ANIMAÇÃO --- */
         .faucet-container {
-            position: relative; /* Âncora para a borda animada */
-            background-color: var(--surface-dark);
-            padding: 40px;
-            border-radius: 16px;
+            position: relative;
+            padding: var(--border-thickness);
+            border-radius: 18px; /* Um pouco maior que o conteúdo interno */
+            background: conic-gradient(
+                from 180deg at 50% 50%,
+                #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000
+            );
+            animation: rotate-rainbow 4s linear infinite;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             width: 90%;
             max-width: 480px;
-            text-align: center;
-            overflow: hidden; /* Garante que a borda respeite o border-radius */
-            z-index: 1;
-        }
-
-        .faucet-container::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Centraliza o gradiente */
-            width: 150%; /* Tamanho grande para garantir que cubra as bordas ao girar */
-            height: 150%;
-            background: conic-gradient(
-                from 0deg,
-                #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000
-            );
-            z-index: -2; /* Fica atrás de tudo */
-            animation: rotate-rainbow 4s linear infinite; /* A ANIMAÇÃO ACONTECE AQUI */
-        }
-
-        .faucet-container::after {
-            content: '';
-            position: absolute;
-            top: var(--border-thickness);
-            left: var(--border-thickness);
-            right: var(--border-thickness);
-            bottom: var(--border-thickness);
-            background-color: var(--surface-dark); /* Cobre o centro, revelando a borda */
-            border-radius: calc(16px - var(--border-thickness));
-            z-index: -1; /* Fica entre a borda e o conteúdo */
         }
 
         @keyframes rotate-rainbow {
             100% {
-                transform: translate(-50%, -50%) rotate(360deg);
+                transform: rotate(360deg);
             }
         }
-        /* --- FIM DA LÓGICA CORRIGIDA --- */
 
-        /* O conteúdo agora precisa de um z-index para ficar na frente */
-        .header, .connect-wallet-btn, .input-group, .claim-btn, #message, #countdown {
-            position: relative;
-            z-index: 2;
+        .faucet-content {
+            background-color: var(--surface-dark);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
         }
 
         .header { margin-bottom: 30px; }
         .header h1 { font-size: 2rem; font-weight: 600; margin: 0 0 10px 0; }
         .header p { color: var(--text-secondary); font-size: 1rem; }
-        .input-group { margin: 20px 0; }
+        .input-group { position: relative; margin: 20px 0; }
 
         input[type="text"] {
             width: calc(100% - 24px); padding: 12px; background-color: var(--background-dark);
@@ -134,28 +108,29 @@
 </head>
 <body>
     <div class="faucet-container">
-        <div class="header">
-            <h1>Faucet comUSD</h1>
-            <p>Receba 100 comUSD para testar nosso ecossistema.</p>
-        </div>
-        
-        <button class="connect-wallet-btn" id="connectWalletBtn">Conectar Carteira</button>
-        
-        <div class="input-group">
-            <input type="text" id="walletAddress" placeholder="Ou cole seu endereço de carteira aqui">
-        </div>
+        <div class="faucet-content">
+            <div class="header">
+                <h1>Faucet comUSD</h1>
+                <p>Receba 100 comUSD para testar nosso ecossistema.</p>
+            </div>
+            
+            <button class="connect-wallet-btn" id="connectWalletBtn">Conectar Carteira</button>
+            
+            <div class="input-group">
+                <input type="text" id="walletAddress" placeholder="Ou cole seu endereço de carteira aqui">
+            </div>
 
-        <button class="claim-btn" id="claimButton">
-            <div class="spinner"></div>
-            <span class="btn-text">Resgatar Meus Tokens</span>
-        </button>
-        
-        <p id="message"></p>
-        <p id="countdown"></p>
+            <button class="claim-btn" id="claimButton">
+                <div class="spinner"></div>
+                <span class="btn-text">Resgatar Meus Tokens</span>
+            </button>
+            
+            <p id="message"></p>
+            <p id="countdown"></p>
+        </div>
     </div>
 
     <script>
-        // O JavaScript permanece exatamente o mesmo, não precisa de alterações.
         const claimButton = document.getElementById('claimButton');
         const connectWalletBtn = document.getElementById('connectWalletBtn');
         const walletAddressInput = document.getElementById('walletAddress');
@@ -163,7 +138,10 @@
         const countdownDiv = document.getElementById('countdown');
         const btnText = claimButton.querySelector('.btn-text');
 
-        const SERVER_URL = 'https://comusd-faucet-api.onrender.com/';
+        // --- CORREÇÃO FINAL APLICADA AQUI ---
+        // A URL deve apontar para o seu servidor no Render e terminar com /claim
+        const SERVER_URL = 'https://comusd-faucet-api.onrender.com/claim';
+        // ------------------------------------
 
         connectWalletBtn.addEventListener('click', async () => {
             if (typeof window.ethereum !== 'undefined') {
@@ -216,7 +194,7 @@
                 }
             } catch (error) {
                 messageDiv.className = 'error';
-                messageDiv.innerText = 'Erro de conexão.';
+                messageDiv.innerText = 'Erro de conexão. Verifique se o servidor Python está rodando.';
                 claimButton.disabled = false;
             } finally {
                 claimButton.classList.remove('loading');
