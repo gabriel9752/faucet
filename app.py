@@ -155,7 +155,7 @@ def claim_tokens():
 
     except Exception as e:
         print(f"ERRO no resgate: {e}")
-        return jsonify({"error": "Ocorreu um erro interno no servidor. Tente novamente mais tarde."}), 500
+        return jsonify({"Ocorreu um erro interno no servidor. Tente novamente mais tarde."}), 500
 
 # --- 5. INICIAR O SERVIDOR ---
 if __name__ == '__main__':
