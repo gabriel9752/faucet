@@ -163,7 +163,7 @@
         const countdownDiv = document.getElementById('countdown');
         const btnText = claimButton.querySelector('.btn-text');
 
-        const SERVER_URL = 'http://127.0.0.1:5001/claim';
+        const SERVER_URL = 'https://comusd-faucet-api.onrender.com/';
 
         connectWalletBtn.addEventListener('click', async () => {
             if (typeof window.ethereum !== 'undefined') {
@@ -216,7 +216,7 @@
                 }
             } catch (error) {
                 messageDiv.className = 'error';
-                messageDiv.innerText = 'Erro de conexão. Verifique se o servidor Python está rodando.';
+                messageDiv.innerText = 'Erro de conexão.';
                 claimButton.disabled = false;
             } finally {
                 claimButton.classList.remove('loading');
