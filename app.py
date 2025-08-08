@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from web3 import Web3
 from dotenv import load_dotenv
 from flask_cors import CORS
+import json # Importa a biblioteca json
 
 # --- 1. CONFIGURAÇÃO INICIAL ---
 load_dotenv()
@@ -145,7 +146,6 @@ def claim_tokens():
         ).build_transaction({
             'chainId': CHAIN_ID,
             'gas': 200000,
-            # A linha 'gasPrice' foi removida para deixar o web3.py calcular a taxa EIP-1559 automaticamente.
             'nonce': nonce,
         })
 
@@ -164,28 +164,13 @@ def claim_tokens():
         return jsonify({"success": True, "tx_hash": w3.to_hex(tx_hash)})
 
     except Exception as e:
-        # Extrai a mensagem de erro da blockchain, se disponível
-        error_message = str(e)
-        if 'message' in error_message:
-            try:
-                import json
-                # Tenta extrair a mensagem específica do erro RPC
-                # Usamos uma forma segura de converter a string do erro em um dicionário
-                start = error_message.find('{')
-                end = error_message.rfind('}') + 1
-                if start != -1 and end != -1:
-                    error_json = error_message[start:end]
-                    error_data = json.loads(error_json)
-                    error_message = error_data.get('message', 'Erro desconhecido na transação.')
-            except Exception:
-                pass # Mantém a mensagem original se a extração falhar
-
-        print(f"ERRO no resgate: {error_message}")
-        # Retorna a mensagem de erro de forma clara para o frontend
-        return jsonify({"error": f"{error_message}"}), 500
+        # --- CORREÇÃO APLICADA AQUI ---
+        # Imprime o erro técnico detalhado no log do servidor (para você ver)
+        print(f"ERRO no resgate: {e}")
+        
+        # Retorna uma mensagem de erro genérica e amigável para o usuário final
+        return jsonify({"error": "ERRO! Não foi possível processar a solicitação no momento. Tente novamente mais tarde."}), 500
 
 # --- 5. INICIAR O SERVIDOR ---
 if __name__ == '__main__':
-    # O host '0.0.0.0' torna o servidor acessível na rede
-    # O debug=False é recomendado para produção, mas pode deixar True para testes
     app.run(host='0.0.0.0', port=5001, debug=True)
