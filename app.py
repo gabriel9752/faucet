@@ -11,20 +11,32 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-w3 = Web3(Web3.HTTPProvider(os.getenv("ARBITRUM_RPC_URL")))
+# Valida se a URL RPC foi definida
+rpc_url = os.getenv("ARBITRUM_RPC_URL")
+if not rpc_url:
+    print("ERRO CRÍTICO: A variável ARBITRUM_RPC_URL não está definida no arquivo .env")
+    exit()
+w3 = Web3(Web3.HTTPProvider(rpc_url))
 
+# Valida a chave privada e carrega a conta do faucet
 try:
-    FAUCET_ACCOUNT = w3.eth.account.from_key(os.getenv("FAUCET_PRIVATE_KEY"))
-except TypeError:
-    print("ERRO: Certifique-se de que FAUCET_PRIVATE_KEY está definida no seu arquivo .env")
+    private_key = os.getenv("FAUCET_PRIVATE_KEY")
+    if not private_key:
+        raise TypeError("A variável FAUCET_PRIVATE_KEY está vazia ou não foi definida.")
+    FAUCET_ACCOUNT = w3.eth.account.from_key(private_key)
+    print(f"Faucet carregado com o endereço: {FAUCET_ACCOUNT.address}")
+except TypeError as e:
+    print(f"ERRO CRÍTICO: {e}")
     exit()
 
+# Valida e prepara o endereço do contrato do token
 raw_token_address = os.getenv("TOKEN_CONTRACT_ADDRESS")
 if not raw_token_address:
-    print("ERRO: Certifique-se de que TOKEN_CONTRACT_ADDRESS está definido no seu arquivo .env")
+    print("ERRO CRÍTICO: A variável TOKEN_CONTRACT_ADDRESS não está definida no arquivo .env")
     exit()
 TOKEN_CONTRACT_ADDRESS = Web3.to_checksum_address(raw_token_address)
 
+# ABI completa do contrato comUSD
 TOKEN_ABI = [
     {"inputs":[{"internalType":"address","name":"initialOwner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
     {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"allowance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"ERC20InsufficientAllowance","type":"error"},
@@ -127,17 +139,15 @@ def claim_tokens():
         
         nonce = w3.eth.get_transaction_count(FAUCET_ACCOUNT.address)
         
-        # --- CORREÇÃO FINAL APLICADA AQUI ---
         tx_build = TOKEN_CONTRACT.functions.transfer(
             checksum_user_address,
             AMOUNT_TO_SEND
         ).build_transaction({
             'chainId': CHAIN_ID,
             'gas': 200000,
-            # A linha 'gasPrice' foi REMOVIDA para deixar o web3.py calcular a taxa EIP-1559 automaticamente.
+            # A linha 'gasPrice' foi removida para deixar o web3.py calcular a taxa EIP-1559 automaticamente.
             'nonce': nonce,
         })
-        # ------------------------------------
 
         signed_tx = w3.eth.account.sign_transaction(tx_build, private_key=FAUCET_ACCOUNT.key)
         
@@ -154,9 +164,28 @@ def claim_tokens():
         return jsonify({"success": True, "tx_hash": w3.to_hex(tx_hash)})
 
     except Exception as e:
-        print(f"ERRO no resgate: {e}")
-        return jsonify({"Ocorreu um erro interno no servidor. Tente novamente mais tarde."}), 500
+        # Extrai a mensagem de erro da blockchain, se disponível
+        error_message = str(e)
+        if 'message' in error_message:
+            try:
+                import json
+                # Tenta extrair a mensagem específica do erro RPC
+                # Usamos uma forma segura de converter a string do erro em um dicionário
+                start = error_message.find('{')
+                end = error_message.rfind('}') + 1
+                if start != -1 and end != -1:
+                    error_json = error_message[start:end]
+                    error_data = json.loads(error_json)
+                    error_message = error_data.get('message', 'Erro desconhecido na transação.')
+            except Exception:
+                pass # Mantém a mensagem original se a extração falhar
+
+        print(f"ERRO no resgate: {error_message}")
+        # Retorna a mensagem de erro de forma clara para o frontend
+        return jsonify({"error": f"{error_message}"}), 500
 
 # --- 5. INICIAR O SERVIDOR ---
 if __name__ == '__main__':
+    # O host '0.0.0.0' torna o servidor acessível na rede
+    # O debug=False é recomendado para produção, mas pode deixar True para testes
     app.run(host='0.0.0.0', port=5001, debug=True)
