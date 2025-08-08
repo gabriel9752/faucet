@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>comUSD Faucet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --background-dark: #121829;
+            --surface-dark: #1B2135;
+            --primary-accent: #007bff;
+            --text-primary: #FFFFFF;
+            --text-secondary: #a0aec0;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --border-thickness: 3px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* --- LÓGICA CORRIGIDA DA ANIMAÇÃO --- */
+        .faucet-container {
+            position: relative; /* Âncora para a borda animada */
+            background-color: var(--surface-dark);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            width: 90%;
+            max-width: 480px;
+            text-align: center;
+            overflow: hidden; /* Garante que a borda respeite o border-radius */
+            z-index: 1;
+        }
+
+        .faucet-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Centraliza o gradiente */
+            width: 150%; /* Tamanho grande para garantir que cubra as bordas ao girar */
+            height: 150%;
+            background: conic-gradient(
+                from 0deg,
+                #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000
+            );
+            z-index: -2; /* Fica atrás de tudo */
+            animation: rotate-rainbow 4s linear infinite; /* A ANIMAÇÃO ACONTECE AQUI */
+        }
+
+        .faucet-container::after {
+            content: '';
+            position: absolute;
+            top: var(--border-thickness);
+            left: var(--border-thickness);
+            right: var(--border-thickness);
+            bottom: var(--border-thickness);
+            background-color: var(--surface-dark); /* Cobre o centro, revelando a borda */
+            border-radius: calc(16px - var(--border-thickness));
+            z-index: -1; /* Fica entre a borda e o conteúdo */
+        }
+
+        @keyframes rotate-rainbow {
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+        /* --- FIM DA LÓGICA CORRIGIDA --- */
+
+        /* O conteúdo agora precisa de um z-index para ficar na frente */
+        .header, .connect-wallet-btn, .input-group, .claim-btn, #message, #countdown {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header { margin-bottom: 30px; }
+        .header h1 { font-size: 2rem; font-weight: 600; margin: 0 0 10px 0; }
+        .header p { color: var(--text-secondary); font-size: 1rem; }
+        .input-group { margin: 20px 0; }
+
+        input[type="text"] {
+            width: calc(100% - 24px); padding: 12px; background-color: var(--background-dark);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
+            color: var(--text-primary); font-size: 1rem; font-family: 'Poppins', sans-serif;
+        }
+        
+        .connect-wallet-btn {
+            display: block; width: 100%; padding: 14px; margin-bottom: 15px;
+            background-color: transparent; color: var(--primary-accent);
+            border: 1px solid var(--primary-accent); border-radius: 8px;
+            cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.3s ease;
+        }
+        .connect-wallet-btn:hover { background-color: var(--primary-accent); color: var(--text-primary); }
+        
+        .claim-btn {
+            width: 100%; padding: 14px; background-color: var(--primary-accent);
+            color: white; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 1.1rem; font-weight: 600; transition: background-color 0.3s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .claim-btn:hover:not(:disabled) { background-color: #0056b3; }
+        .claim-btn:disabled { background-color: #555; color: #999; cursor: not-allowed; }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            border-top: 3px solid var(--text-primary); width: 20px; height: 20px;
+            animation: spin 1s linear infinite; display: none; margin-right: 10px;
+        }
+        .claim-btn.loading .spinner { display: inline-block; }
+        .claim-btn.loading .btn-text { display: none; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #message { margin-top: 25px; font-weight: 500; min-height: 24px; word-break: break-all; }
+        .success { color: var(--success-color); }
+        .error { color: var(--error-color); }
+        a { color: var(--primary-accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        #countdown { color: var(--text-secondary); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="faucet-container">
+        <div class="header">
+            <h1>Faucet comUSD</h1>
+            <p>Receba 100 comUSD para testar nosso ecossistema.</p>
+        </div>
+        
+        <button class="connect-wallet-btn" id="connectWalletBtn">Conectar Carteira</button>
+        
+        <div class="input-group">
+            <input type="text" id="walletAddress" placeholder="Ou cole seu endereço de carteira aqui">
+        </div>
+
+        <button class="claim-btn" id="claimButton">
+            <div class="spinner"></div>
+            <span class="btn-text">Resgatar Meus Tokens</span>
+        </button>
+        
+        <p id="message"></p>
+        <p id="countdown"></p>
+    </div>
+
+    <script>
+        // O JavaScript permanece exatamente o mesmo, não precisa de alterações.
+        const claimButton = document.getElementById('claimButton');
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const walletAddressInput = document.getElementById('walletAddress');
+        const messageDiv = document.getElementById('message');
+        const countdownDiv = document.getElementById('countdown');
+        const btnText = claimButton.querySelector('.btn-text');
+
+        const SERVER_URL = 'http://127.0.0.1:5001/claim';
+
+        connectWalletBtn.addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    walletAddressInput.value = accounts[0];
+                    messageDiv.innerText = "Carteira conectada!";
+                    messageDiv.className = 'success';
+                } catch (error) {
+                    messageDiv.innerText = "Conexão da carteira rejeitada.";
+                    messageDiv.className = 'error';
+                }
+            } else {
+                messageDiv.innerText = "MetaMask não detectada. Por favor, instale a extensão.";
+                messageDiv.className = 'error';
+            }
+        });
+
+        claimButton.addEventListener('click', async () => {
+            const address = walletAddressInput.value.trim();
+            if (!address) {
+                messageDiv.className = 'error';
+                messageDiv.innerText = 'Por favor, conecte ou insira um endereço de carteira válido.';
+                return;
+            }
+
+            claimButton.classList.add('loading');
+            claimButton.disabled = true;
+            messageDiv.innerText = '';
+            messageDiv.className = '';
+
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: address })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    messageDiv.className = 'success';
+                    messageDiv.innerHTML = `Sucesso! Tokens enviados. <a href="https://arbiscan.io/tx/${result.tx_hash}" target="_blank">Ver transação</a>`;
+                    localStorage.setItem('comUSD_last_claim', new Date().toISOString());
+                    handleCooldown();
+                } else {
+                    messageDiv.className = 'error';
+                    messageDiv.innerText = `Erro: ${result.error}`;
+                    claimButton.disabled = false;
+                }
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.innerText = 'Erro de conexão. Verifique se o servidor Python está rodando.';
+                claimButton.disabled = false;
+            } finally {
+                claimButton.classList.remove('loading');
+            }
+        });
+
+        let countdownInterval;
+        const handleCooldown = () => {
+            clearInterval(countdownInterval);
+            const lastClaimTimestamp = localStorage.getItem('comUSD_last_claim');
+            if (!lastClaimTimestamp) {
+                btnText.innerText = 'Resgatar Meus Tokens';
+                claimButton.disabled = false;
+                countdownDiv.innerText = '';
+                return;
+            }
+
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            const endTime = new Date(lastClaimTimestamp).getTime() + twentyFourHours;
+
+            countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    handleCooldown();
+                    return;
+                }
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownDiv.innerText = `Próximo resgate em: ${hours}h ${minutes}m ${seconds}s`;
+                btnText.innerText = 'Aguarde';
+                claimButton.disabled = true;
+
+            }, 1000);
+        };
+
+        window.onload = handleCooldown;
+    </script>
+</body>
+</html>
