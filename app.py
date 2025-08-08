@@ -126,21 +126,22 @@ def claim_tokens():
         print(f"Enviando {w3.from_wei(AMOUNT_TO_SEND, 'gwei')} comUSD para {checksum_user_address}...")
         
         nonce = w3.eth.get_transaction_count(FAUCET_ACCOUNT.address)
+        
+        # --- CORREÇÃO FINAL APLICADA AQUI ---
         tx_build = TOKEN_CONTRACT.functions.transfer(
             checksum_user_address,
             AMOUNT_TO_SEND
         ).build_transaction({
             'chainId': CHAIN_ID,
             'gas': 200000,
-            'gasPrice': w3.eth.gas_price,
+            # A linha 'gasPrice' foi REMOVIDA para deixar o web3.py calcular a taxa EIP-1559 automaticamente.
             'nonce': nonce,
         })
+        # ------------------------------------
 
         signed_tx = w3.eth.account.sign_transaction(tx_build, private_key=FAUCET_ACCOUNT.key)
         
-        # --- CORREÇÃO FINAL APLICADA AQUI ---
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        # ------------------------------------
 
         cursor.execute(
             "INSERT INTO claims (wallet_address, ip_address, claim_time) VALUES (?, ?, ?)",
